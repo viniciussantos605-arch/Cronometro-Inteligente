@@ -1,5 +1,5 @@
 const CACHE_NAME = 'fim-de-papo-v1';
-const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon.svg', '/audios.json'];
+const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg', './audios.json'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
@@ -20,7 +20,7 @@ self.addEventListener('fetch', (event) => {
 
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match('/index.html'))
+      fetch(event.request).catch(() => caches.match('./index.html'))
     );
     return;
   }
