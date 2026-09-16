@@ -1,0 +1,19 @@
+{
+  "name": "Fim de Papo | Cronometro",
+  "short_name": "Fim de Papo",
+  "description": "Cronometro de intervalos para treinos.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#121817",
+  "theme_color": "#121817",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
