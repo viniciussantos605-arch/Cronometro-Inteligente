@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fim de Papo | Cronômetro</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+        :root {
+            --ink: #18211f;
+            --muted: #6e7975;
+            --paper: #f4f5ef;
+            --panel: #ffffff;
+            --line: #dce2db;
+            --accent: #d7f45b;
+            --accent-strong: #a8c92f;
+            --coral: #ef765b;
+            --ghost-hover: rgba(24, 33, 31, .06);
+        }
+
+        body.dark-mode {
+            --ink: #f4f5ef;
+            --muted: #aab5ae;
+            --paper: #121817;
+            --panel: #1d2724;
+            --line: #34413c;
+            --ghost-hover: rgba(244, 245, 239, .09);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: 'Space Grotesk', sans-serif;
+            min-height: 100dvh;
+            margin: 0;
+            padding: 20px 16px calc(194px + env(safe-area-inset-bottom));
+            transition: background-color .3s ease, color .3s ease;
+        }
+
+        .app-shell { display: flex; flex-direction: column; min-height: calc(100dvh - 20px); margin: 0 auto; max-width: 560px; width: 100%; }
+        .topbar { align-items: center; display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .brand { align-items: center; display: flex; font-size: 18px; font-weight: 700; gap: 12px; letter-spacing: .02em; }
+        .brand-mark { display: grid; place-items: center; width: 36px; height: 36px; background: var(--ink); color: var(--accent); border-radius: 50%; font-size: 17px; }
+        .session-label { display: none; }
+        .settings { position: relative; }
+        .settings-button { align-items: center; background: transparent; color: var(--ink); display: inline-flex; height: 44px; justify-content: center; padding: 0; width: 44px; }
+        .settings-button svg { height: 23px; width: 23px; }
+        .settings-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 16px 34px rgba(24, 33, 31, .18); display: grid; gap: 14px; padding: 16px; position: absolute; right: 0; top: 52px; width: min(300px, calc(100vw - 32px)); z-index: 30; }
+        .settings-panel[hidden] { display: none; }
+        .settings-title { font-size: 14px; margin: 0; }
+        .setting-row { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
+        .setting-label { color: var(--ink); font-size: 13px; font-weight: 600; }
+        .setting-help { color: var(--muted); display: block; font-size: 11px; font-weight: 400; margin-top: 3px; }
+        .mode-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+        .mode-button { background: #f7f8f4; border: 1px solid var(--line); color: var(--muted); font-size: 12px; min-height: 40px; padding: 8px; }
+        body.dark-mode .mode-button { background: #26332e; }
+        .mode-button.active { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+        .edit-time { border-top: 1px solid var(--line); padding-top: 14px; }
+        .edit-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+        .edit-fields label { color: var(--muted); font-size: 10px; text-transform: uppercase; }
+        .edit-fields input { background: #f7f8f4; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); font-family: 'DM Mono', monospace; font-size: 16px; margin-top: 4px; padding: 9px; width: 100%; }
+        body.dark-mode .edit-fields input { background: #26332e; }
+        .save-time { background: var(--accent); color: var(--ink); font-size: 12px; margin-top: 8px; min-height: 40px; width: 100%; }
+        .switch { accent-color: var(--accent-strong); height: 20px; width: 20px; }
+        .alarm-audio { border-top: 1px solid var(--line); padding-top: 14px; }
+        .audio-select { background: #f7f8f4; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); font-family: inherit; font-size: 12px; margin-top: 8px; min-height: 44px; padding: 8px 10px; width: 100%; }
+        body.dark-mode .audio-select { background: #26332e; }
+        .hero { align-items: center; display: flex; flex-direction: column; flex: 1; gap: 18px; }
+        .hero-copy { text-align: center; }
+        .eyebrow { color: var(--coral); font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .12em; margin: 0 0 14px; padding: 0; text-transform: uppercase; }
+        body.dark-mode .eyebrow { color: #FF7B72; }
+        h1 { font-size: clamp(42px, 13vw, 70px); line-height: .94; letter-spacing: -.06em; margin: 0; }
+        .intro { color: var(--muted); font-size: 14px; line-height: 1.45; margin: 16px auto 0; max-width: 330px; }
+        body.dark-mode .intro { color: #c5d0ca; font-weight: 500; }
+        .timer-panel { align-items: center; display: flex; flex-direction: column; width: 100%; }
+        .panel-header { align-items: center; display: flex; justify-content: space-between; margin-bottom: 16px; width: 100%; }
+        .panel-title { font-size: 14px; font-weight: 700; margin: 0; }
+        .status { align-items: center; color: var(--muted); display: flex; font-family: 'DM Mono', monospace; font-size: 11px; gap: 7px; }
+        .status::before { background: var(--accent-strong); border-radius: 50%; content: ''; height: 7px; width: 7px; }
+        .display-row { align-items: center; display: flex; gap: 14px; justify-content: center; margin: 4px 0 22px; }
+        #display { color: var(--ink); font-family: 'DM Mono', monospace; font-size: clamp(84px, 25vw, 148px); font-weight: 900; letter-spacing: -.09em; line-height: .9; margin: 0; text-align: center; }
+        .audio-toggle { align-items: center; background: var(--ink); border-radius: 50%; color: var(--accent); display: inline-flex; height: 42px; justify-content: center; padding: 0; width: 42px; }
+        .audio-toggle[aria-pressed="false"] { background: #e8ece5; color: var(--muted); }
+        .audio-toggle svg { height: 19px; width: 19px; }
+        .audio-toggle .mute-mark { display: none; }
+        .audio-toggle[aria-pressed="false"] .volume-waves { display: none; }
+        .audio-toggle[aria-pressed="false"] .mute-mark { display: block; }
+        .audio-picker { position: relative; }
+        .audio-picker-button { align-items: center; background: #f7f8f4; border: 1px solid var(--line); color: var(--ink); display: inline-flex; height: 42px; justify-content: center; padding: 0; width: 42px; }
+        .audio-picker-button svg { height: 19px; width: 19px; }
+        .audio-menu { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; bottom: calc(210px + env(safe-area-inset-bottom)); box-shadow: 0 14px 30px rgba(24, 33, 31, .16); display: grid; gap: 4px; left: 16px; max-height: 45vh; overflow-y: auto; padding: 8px; position: fixed; right: 16px; z-index: 20; }
+        .audio-menu[hidden] { display: none; }
+        .audio-option { background: transparent; border-radius: 7px; color: var(--ink); font-size: 13px; min-height: 42px; padding: 10px; text-align: left; }
+        .audio-option:hover { background: var(--accent); }
+        .quick-timers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; width: 100%; }
+        .quick-timer { background: #f7f8f4; border: 1px solid var(--line); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 18px; min-height: 52px; padding: 11px 8px; }
+        body.dark-mode .quick-timer { background: #26332e; }
+        .quick-timer.active, .quick-timer:hover { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+        .control-dock { background: transparent; bottom: 0; left: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); position: fixed; right: 0; transition: background-color .3s ease; z-index: 10; }
+        .control-dock > * { margin-left: auto; margin-right: auto; max-width: 528px; }
+        .botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button { border: 0; border-radius: 9px; cursor: pointer; font-family: inherit; font-size: 15px; font-weight: 700; min-height: 52px; padding: 14px 16px; transition: transform .2s ease, filter .2s ease, background-color .2s ease, border-color .2s ease; }
+        button:hover { filter: brightness(.96); transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+        #btn-iniciar { background: var(--accent); color: #121212; grid-column: span 2; min-height: 56px; }
+        body.dark-mode #btn-iniciar { background: #c9e063; color: #121212; }
+        #btn-pausar, #btn-resetar { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+        #btn-pausar:hover, #btn-resetar:hover { background: var(--ghost-hover); filter: none; }
+        .bottom-note { display: none; }
+    </style>
+</head>
+<body>
+    <main class="app-shell">
+        <header class="topbar">
+            <div class="brand"><span class="brand-mark">F</span> FIM DE PAPO</div>
+            <div class="settings">
+                <button class="settings-button" id="btn-configuracoes" type="button" aria-label="Abrir configurações" aria-expanded="false" onclick="alternarConfiguracoes()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" aria-hidden="true">
+                        <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+                        <path d="m19.4 15 .1.1a2 2 0 0 1-2.8 2.8l-.1-.1a2 2 0 0 0-3.4 1.4v.2a2 2 0 0 1-4 0v-.2a2 2 0 0 0-3.4-1.4l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A2 2 0 0 0 1.6 12h-.2a2 2 0 0 1 0-4h.2A2 2 0 0 0 3 4.6l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A2 2 0 0 0 9.2.5V.3a2 2 0 0 1 4 0v.2a2 2 0 0 0 3.4 1.4l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A2 2 0 0 0 20.8 8h.2a2 2 0 0 1 0 4h-.2a2 2 0 0 0-1.4 3Z" transform="scale(.9) translate(1.3 1.3)" />
+                    </svg>
+                </button>
+                <div class="settings-panel" id="settings-panel" hidden>
+                    <h2 class="settings-title">Configurações</h2>
+                    <div class="setting-row">
+                        <span class="setting-label">Modo escuro<span class="setting-help">Mais conforto em ambientes com pouca luz</span></span>
+                        <input class="switch" id="modoEscuro" type="checkbox" onchange="alternarModoEscuro()">
+                    </div>
+                    <div>
+                        <span class="setting-label">Modo do cronômetro</span>
+                        <div class="mode-buttons">
+                            <button class="mode-button active" id="modoDecrescente" type="button" onclick="definirModo('decrescente')">Decrescente</button>
+                            <button class="mode-button" id="modoCrescente" type="button" onclick="definirModo('crescente')">Crescente</button>
+                        </div>
+                    </div>
+                    <div class="edit-time">
+                        <span class="setting-label">Editar tempo decrescente</span>
+                        <span class="setting-help">Defina a duração personalizada do intervalo.</span>
+                        <div class="edit-fields">
+                            <label>Minutos<input id="editarMinutos" type="number" min="0" max="99" value="1"></label>
+                            <label>Segundos<input id="editarSegundos" type="number" min="0" max="59" value="0"></label>
+                        </div>
+                        <button class="save-time" type="button" onclick="salvarTempoEditado()">Aplicar tempo</button>
+                    </div>
+                    <div class="alarm-audio">
+                        <span class="setting-label">Áudio ao finalizar</span>
+                        <span class="setting-help">Escolha o meme que será reproduzido ao terminar.</span>
+                        <select class="audio-select" id="audioSelecionado" onchange="selecionarAudio(this.value)">
+                            <option value="pix-manda-o-pix.mp3">Carregando áudios...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="hero">
+            <div class="hero-copy">
+                <p class="eyebrow">Treino começa agora</p>
+                <h1>Seu ritmo.<br>Seu próximo nível.</h1>
+                <p class="intro">Um cronômetro simples para manter o foco entre cada série e transformar consistência em resultado.</p>
+            </div>
+
+            <section class="timer-panel" aria-label="Cronômetro de treino">
+                <div class="panel-header">
+                    <h2 class="panel-title">Intervalo atual</h2>
+                    <span class="status">Pronto</span>
+                </div>
+                <div class="display-row">
+                    <div id="display" aria-live="polite">01:00</div>
+                    <button class="audio-toggle" id="btn-audio" type="button" aria-label="Desativar alerta sonoro" aria-pressed="true" onclick="alternarAudio()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" aria-hidden="true">
+                            <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+                            <path class="volume-waves" d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                            <path class="mute-mark" d="m16 9 5 6m0-6-5 6" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="control-dock">
+                    <div class="quick-timers" aria-label="Atalhos de duração">
+                        <button class="quick-timer active" type="button" data-seconds="60" onclick="selecionarDuracao(60)">60s</button>
+                        <button class="quick-timer" type="button" data-seconds="90" onclick="selecionarDuracao(90)">90s</button>
+                        <button class="quick-timer" type="button" data-seconds="120" onclick="selecionarDuracao(120)">120s</button>
+                    </div>
+                    <div class="botoes">
+                        <button id="btn-iniciar" onclick="iniciar()">Iniciar intervalo</button>
+                        <button id="btn-pausar" onclick="pausar()">Pausar</button>
+                        <button id="btn-resetar" onclick="resetar()">Resetar</button>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+        <footer class="bottom-note">
+            <span>FOCO / CONSTÂNCIA / EVOLUÇÃO</span>
+            <span>01:00 DEFAULT</span>
+        </footer>
+    </main>
+
+    <audio id="audioMeme" src="meme.mp3/pix-manda-o-pix.mp3"></audio>
+
+    <script>
+        let timer;
+        let tempoRestante = 60;
+        let duracaoTotal = 60;
+        let rodando = false;
+        let audioAtivo = true;
+        let modoContagem = 'decrescente';
+        
+        const display = document.getElementById('display');
+        const audioMeme = document.getElementById('audioMeme');
+        const audioButton = document.getElementById('btn-audio');
+        const audioSelecionado = document.getElementById('audioSelecionado');
+
+        async function carregarAudios() {
+            try {
+                const resposta = await fetch('audios.json');
+                if (!resposta.ok) throw new Error('Manifesto de áudios indisponível');
+                const arquivos = (await resposta.json())
+                    .filter(nome => nome.toLowerCase().endsWith('.mp3'))
+                    .map(nome => nome === 'bolinho-maraviloso-e-cafe-do-mile.mp3' ? 'bolinho-maravilhoso-e-cafe-do-mile.mp3' : nome)
+                    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+                audioSelecionado.replaceChildren();
+                arquivos.forEach(nomeArquivo => {
+                    const opcao = document.createElement('option');
+                    opcao.value = nomeArquivo;
+                    opcao.textContent = nomeArquivo.replace(/\.mp3$/i, '').replaceAll('-', ' ');
+                    audioSelecionado.appendChild(opcao);
+                });
+
+                selecionarAudio(arquivos.includes('pix-manda-o-pix.mp3') ? 'pix-manda-o-pix.mp3' : arquivos[0]);
+            } catch (erro) {
+                audioSelecionado.replaceChildren(new Option('Não foi possível carregar os áudios', ''));
+            }
+        }
+        const settingsPanel = document.getElementById('settings-panel');
+        const settingsButton = document.getElementById('btn-configuracoes');
+
+        function alternarConfiguracoes() {
+            const aberto = !settingsPanel.hidden;
+            settingsPanel.hidden = aberto;
+            settingsButton.setAttribute('aria-expanded', String(!aberto));
+        }
+
+        function alternarModoEscuro() {
+            document.body.classList.toggle('dark-mode', document.getElementById('modoEscuro').checked);
+        }
+
+        function definirModo(modo) {
+            pausar();
+            modoContagem = modo;
+            document.getElementById('modoDecrescente').classList.toggle('active', modo === 'decrescente');
+            document.getElementById('modoCrescente').classList.toggle('active', modo === 'crescente');
+            resetar();
+        }
+
+        function salvarTempoEditado() {
+            const minutos = Math.max(0, Number(document.getElementById('editarMinutos').value) || 0);
+            const segundos = Math.min(59, Math.max(0, Number(document.getElementById('editarSegundos').value) || 0));
+            const novoTempo = (minutos * 60) + segundos;
+            if (novoTempo <= 0) return;
+
+            duracaoTotal = novoTempo;
+            tempoRestante = modoContagem === 'crescente' ? 0 : novoTempo;
+            atualizarTela(tempoRestante);
+            document.querySelectorAll('.quick-timer').forEach(botao => botao.classList.remove('active'));
+            alternarConfiguracoes();
+        }
+
+        function selecionarAudio(nomeArquivo) {
+            audioMeme.pause();
+            audioMeme.currentTime = 0;
+            audioMeme.src = `meme.mp3/${nomeArquivo}`;
+            audioMeme.load();
+        }
+
+        function selecionarDuracao(segundos) {
+            pausar();
+            duracaoTotal = segundos;
+            tempoRestante = modoContagem === 'crescente' ? 0 : segundos;
+            document.querySelectorAll('.quick-timer').forEach(botao => {
+                botao.classList.toggle('active', Number(botao.dataset.seconds) === segundos);
+            });
+            atualizarTela(tempoRestante);
+        }
+
+        function atualizarTela(segundosTotais) {
+            const min = Math.floor(segundosTotais / 60).toString().padStart(2, '0');
+            const seg = (segundosTotais % 60).toString().padStart(2, '0');
+            display.textContent = `${min}:${seg}`;
+        }
+
+        function iniciar() {
+            if (rodando) return;
+            if (modoContagem === 'decrescente' && tempoRestante <= 0) resetar();
+
+            rodando = true;
+            timer = setInterval(() => {
+                tempoRestante += modoContagem === 'crescente' ? 1 : -1;
+                atualizarTela(tempoRestante);
+
+                const terminou = modoContagem === 'crescente'
+                    ? tempoRestante >= duracaoTotal
+                    : tempoRestante <= 0;
+
+                if (terminou) {
+                    clearInterval(timer);
+                    rodando = false;
+                    if (audioAtivo) audioMeme.play().catch(() => {});
+                }
+            }, 1000);
+        }
+
+        function alternarAudio() {
+            audioAtivo = !audioAtivo;
+            audioButton.setAttribute('aria-pressed', String(audioAtivo));
+            audioButton.setAttribute('aria-label', audioAtivo ? 'Desativar alerta sonoro' : 'Ativar alerta sonoro');
+            if (!audioAtivo) {
+                audioMeme.pause();
+                audioMeme.currentTime = 0;
+            }
+        }
+
+        function pausar() {
+            clearInterval(timer);
+            rodando = false;
+        }
+
+        function resetar() {
+            clearInterval(timer);
+            rodando = false;
+            tempoRestante = modoContagem === 'crescente' ? 0 : duracaoTotal;
+            atualizarTela(tempoRestante);
+            
+            audioMeme.pause();
+            audioMeme.currentTime = 0;
+        }
+
+        // Configuração inicial ao carregar a página
+        resetar();
+        carregarAudios();
+    </script>
+</body>
+</html>
